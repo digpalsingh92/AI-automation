@@ -21,3 +21,10 @@ export class AppError extends Error {
         Error.captureStackTrace?.(this, AppError);
     }
 }
+
+export class BadRequestError extends AppError {
+    constructor(message = "Bad Request", details?: unknown) {
+        super(message, 400, "BAD_REQUEST", details);
+        this.name = "BadRequestError";
+    }
+}

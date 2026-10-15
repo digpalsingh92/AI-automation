@@ -1,6 +1,7 @@
 import prisma from "../utils/prisma.js";
 import bcrypt from "bcrypt";
-import type { UserInfo } from "../types/user-types.js";
+import type { UserInfo, LoginInput } from "../types/user-types.js";
+import { generateAccessToken } from "../middlewares/jwt-token.js";
 
 export const userRegistration = async (userInfo: UserInfo) => {
     const { username, email, password } = userInfo;
@@ -39,9 +40,36 @@ export const userRegistration = async (userInfo: UserInfo) => {
         throw new Error("Something went wrong please try again");
     }
 
+    const token = generateAccessToken(newUser.id, newUser);
     return {
         id: newUser.id,
         username: newUser.username,
-        email: newUser.email
+        email: newUser.email,
+        token
     };
 };
+
+export const userLogin = async (user: LoginInput) => {
+    const { username, password } = user;
+    if (!username || !password) {
+        throw new Error("Please provide all the required fields")
+    }
+    const existingUser = await prisma.user.findUnique({ where: { username } });
+
+    if (!existingUser) {
+        throw new Error("User not found");
+    }
+    const isPasswordValid = await bcrypt.compare(password, existingUser.password);
+
+    if (!isPasswordValid) {
+        throw new Error("Invalid password");
+    }
+
+    const token = generateAccessToken(existingUser.id, existingUser);
+    return {
+        id: existingUser.id,
+        username: existingUser.username,
+        email: existingUser.email,
+        token
+    };
+}

@@ -5,6 +5,7 @@ import { errorHandler } from './common/error-handler.js';
 import cookieParser from "cookie-parser"
 
 import { authRouter } from './routes/auth-route.js';
+import { morganMiddleware } from './middlewares/morgan-middleware.js';
 
 const app = express();
 
@@ -12,17 +13,20 @@ app.use(cors());
 app.use(express.json());
 app.use(cookieParser())
 
+app.use(morganMiddleware);
+
 // Routes
 app.use('/api/v1/auth', authRouter);
+
+
+app.get('/health', (req: Request, res: Response) => {
+    res.send("OK");
+})
 
 //Not found Error Handler
 app.use(notFoundHandler);
 
 // Global error handler
 app.use(errorHandler);
-
-app.get('/health', (req: Request, res: Response) => {
-    res.send("OK");
-})
 
 export default app;

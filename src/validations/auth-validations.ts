@@ -1,14 +1,31 @@
-import * as z from "zod";
+import { z } from "zod";
 
-const registerInputValidation = z.object({
-    username: z.string().min(4, "Username is too short").trim().transform((val) => val.replace(/\s+/g, '')),
-    email: z.email("Invalid email").trim().transform((val) => val.toLowerCase()),
-    password: z.string().min(6, "Password is too short")
-})
+const usernameSchema = z.string()
+    .min(4, "Username must be at least 4 characters")
+    .max(20, "Username cannot exceed 20 characters")
+    .superRefine((value, ctx) => {
+        if (/\s/.test(value)) {
+            ctx.addIssue({
+                code: "custom",
+                message:
+                    "Spaces are not allowed. Use '_' or '-' instead.",
+            });
+        } else if (!/^[a-zA-Z0-9_-]+$/.test(value)) {
+            ctx.addIssue({
+                code: "custom",
+                message:
+                    "Only letters, numbers, '_' and '-' are allowed.",
+            });
+        }
+    });
 
-const loginInputValidation = z.object({
-    username: z.string().min(4, "Username is too short").trim(),
-    password: z.string().min(6, "Password is too short")
-})
+export const registerInputValidation = z.object({
+    username: usernameSchema,
+    email: z.email("Invalid email"),
+    password: z.string().min(6),
+});
 
-export { registerInputValidation, loginInputValidation }
+export const loginInputValidation = z.object({
+    username: usernameSchema,
+    password: z.string().min(6),
+});

@@ -2,12 +2,19 @@ import prisma from "../utils/prisma.js";
 import bcrypt from "bcrypt";
 import type { UserInfo, LoginInput } from "../types/user-types.js";
 import { generateAccessToken } from "../middlewares/jwt-token.js";
+import {
+    BadRequestError,
+    ConflictError,
+    InternalServerError,
+    NotFoundError,
+    UnauthorizedError,
+} from "../common/app-error.js";
 
 export const userRegistration = async (userInfo: UserInfo) => {
     const { username, email, password } = userInfo;
 
     if (!username || !email || !password) {
-        throw new Error("Please provide all the required fields");
+        throw new BadRequestError("Please provide all the required fields");
     }
 
     const existingUserName = await prisma.user.findUnique({
@@ -15,15 +22,15 @@ export const userRegistration = async (userInfo: UserInfo) => {
     });
 
     if (existingUserName) {
-        throw new Error("Please provide a unique username");
+        throw new ConflictError("Please provide a unique username");
     }
 
     const existingEmail = await prisma.user.findUnique({
-        where: { email }
+        where: { email },
     });
 
     if (existingEmail) {
-        throw new Error("Please provide a unique email");
+        throw new ConflictError("Please provide a unique email");
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -32,12 +39,12 @@ export const userRegistration = async (userInfo: UserInfo) => {
         data: {
             username,
             email,
-            password: hashedPassword
-        }
+            password: hashedPassword,
+        },
     });
 
     if (!newUser) {
-        throw new Error("Something went wrong please try again");
+        throw new InternalServerError("Something went wrong, please try again");
     }
 
     const token = generateAccessToken(newUser.id, { username, email });
@@ -52,17 +59,19 @@ export const userRegistration = async (userInfo: UserInfo) => {
 export const userLogin = async (user: LoginInput) => {
     const { username, password } = user;
     if (!username || !password) {
-        throw new Error("Please provide all the required fields")
+        throw new BadRequestError("Please provide all the required fields");
     }
+
     const existingUser = await prisma.user.findUnique({ where: { username } });
 
     if (!existingUser) {
-        throw new Error("User not found");
+        throw new NotFoundError("User not found");
     }
+
     const isPasswordValid = await bcrypt.compare(password, existingUser.password);
 
     if (!isPasswordValid) {
-        throw new Error("Invalid password");
+        throw new UnauthorizedError("Invalid password");
     }
 
     const token = generateAccessToken(existingUser.id, { username, email: existingUser.email });
@@ -70,28 +79,32 @@ export const userLogin = async (user: LoginInput) => {
         id: existingUser.id,
         username: existingUser.username,
         email: existingUser.email,
-        token
+        token,
     };
-}
+};
 
-export const usersProfile = async (userInfo: UserInfo) => {
-    const { username } = userInfo;
+export const usersProfile = async (userId: string) => {
 
-    if (!username) {
-        throw new Error("Please provide a username");
+    if (!userId) {
+        throw new BadRequestError("Please provide a user id");
     }
 
     const user = await prisma.user.findUnique({
-        where: { username }
+        where: { id: userId },
+        select: {
+            id: true,
+            username: true,
+            email: true,
+        },
     });
 
     if (!user) {
-        throw new Error("User not found");
+        throw new NotFoundError("User not found");
     }
 
     return {
         id: user.id,
         username: user.username,
-        email: user.email
-    }
-}
+        email: user.email,
+    };
+};

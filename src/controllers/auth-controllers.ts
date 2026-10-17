@@ -2,12 +2,12 @@ import asyncHandler from "express-async-handler";
 import { userLogin, userRegistration, usersProfile } from "../services/auth-service.js";
 import type { Request, Response } from "express";
 import { sendSuccess } from "../common/api-response.js";
+import { UnauthorizedError } from "../common/app-error.js";
 
 export const registerUser = asyncHandler(async (req: Request, res: Response) => {
     const { username, email, password } = req.body;
 
     const newUser = await userRegistration({ username, email, password });
-
     res.cookie('token', newUser.token, {
         httpOnly: true,
         secure: true,
@@ -16,7 +16,7 @@ export const registerUser = asyncHandler(async (req: Request, res: Response) => 
         path: '/'
     });
 
-    sendSuccess(res, newUser, "User registered successfully", 201);
+    sendSuccess(res, { id: newUser.id, username: newUser.username, email: newUser.email }, "User registered successfully", 201);
 });
 
 export const loginUser = asyncHandler(async (req: Request, res: Response) => {
@@ -30,7 +30,7 @@ export const loginUser = asyncHandler(async (req: Request, res: Response) => {
         maxAge: 3600000,
         path: '/'
     });
-    sendSuccess(res, user, "User logged in successfully", 200);
+    sendSuccess(res, { username: user.username, email: user.email, id: user.id }, "User logged in successfully", 200);
 });
 
 export const logoutUser = asyncHandler(async (req: Request, res: Response) => {
@@ -45,7 +45,11 @@ export const logoutUser = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const getProfile = asyncHandler(async (req: Request, res: Response) => {
-    const { username } = req.body;
-    const user = await usersProfile(username); //pass username to check for User
+    const userId = req.user?.id;
+    if (!userId) {
+        throw new UnauthorizedError("Please login to access this resource");
+    }
+
+    const user = await usersProfile(userId);
     sendSuccess(res, user, "User profile fetched successfully", 200);
 });

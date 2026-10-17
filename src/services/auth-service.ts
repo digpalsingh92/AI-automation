@@ -11,7 +11,7 @@ export const userRegistration = async (userInfo: UserInfo) => {
     }
 
     const existingUserName = await prisma.user.findUnique({
-        where: { username }
+        where: { username },
     });
 
     if (existingUserName) {
@@ -40,7 +40,7 @@ export const userRegistration = async (userInfo: UserInfo) => {
         throw new Error("Something went wrong please try again");
     }
 
-    const token = generateAccessToken(newUser.id, newUser);
+    const token = generateAccessToken(newUser.id, { username, email });
     return {
         id: newUser.id,
         username: newUser.username,
@@ -65,11 +65,33 @@ export const userLogin = async (user: LoginInput) => {
         throw new Error("Invalid password");
     }
 
-    const token = generateAccessToken(existingUser.id, existingUser);
+    const token = generateAccessToken(existingUser.id, { username, email: existingUser.email });
     return {
         id: existingUser.id,
         username: existingUser.username,
         email: existingUser.email,
         token
     };
+}
+
+export const usersProfile = async (userInfo: UserInfo) => {
+    const { username } = userInfo;
+
+    if (!username) {
+        throw new Error("Please provide a username");
+    }
+
+    const user = await prisma.user.findUnique({
+        where: { username }
+    });
+
+    if (!user) {
+        throw new Error("User not found");
+    }
+
+    return {
+        id: user.id,
+        username: user.username,
+        email: user.email
+    }
 }

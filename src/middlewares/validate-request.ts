@@ -5,7 +5,12 @@ import { BadRequestError } from "../common/app-error.js";
 export const validateRequest = (schema: ZodSchema) => {
     return async (req: Request, _res: Response, next: NextFunction) => {
         try {
-            await schema.parseAsync(req.body);
+            // 1. Capture the transformed data returned by Zod
+            const validatedData = await schema.parseAsync(req.body);
+
+            // 2. Overwrite req.body so the controller receives the clean data
+            req.body = validatedData;
+
             next();
         } catch (error) {
             if (error instanceof ZodError) {

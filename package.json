@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
-    "start": "node dist/src/server.js"
+    "start": "node dist/src/server.js",
+    "prisma:push": "npx prisma db push"
   },
   "keywords": [],
   "type": "module",
@@ -17,11 +18,12 @@
     "@types/dotenv": "^6.1.1",
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10",
+    "@types/morgan": "^1.9.10",
     "@types/node": "^26.6.5",
     "@types/pg": "^8.23.1",
-    "dotenv": "^18.0.7",
+    "dotenv": "^18.0.8",
     "nodemon": "^3.1.14",
-    "prisma": "^7.10.0",
+    "prisma": "^7.10.1",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2"
   },
@@ -34,7 +36,9 @@
     "express": "^5.3.0",
     "express-async-handler": "^1.2.0",
     "jsonwebtoken": "^9.0.3",
+    "morgan": "^1.12.1",
     "pg": "^8.23.1",
+    "winston": "^3.19.0",
     "zod": "^4.6.7"
   }
 }

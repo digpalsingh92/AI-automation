@@ -7,11 +7,69 @@ datasource db {
   provider = "postgresql"
 }
 
+enum Role {
+  ADMIN
+  USER
+}
+
+enum ProjectRole {
+  OWNER     @map("owner")
+  MANAGER   @map("manager")
+  DEVELOPER @map("developer")
+  QA        @map("qa")
+  EDITOR    @map("editor")
+
+  @@map("project_member_role")
+}
+
 model User {
   id        String   @id @default(uuid())
   username  String   @unique
   email     String   @unique
   password  String
+  avatarUrl String
+  role      Role     @default(USER)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  projects       Project[]        @relation("ProjectOwner")
+  projectMembers ProjectMembers[]
+
+  @@map("users")
+}
+
+model Project {
+  id                   String @id @default(uuid())
+  name                 String
+  description          String
+  goals                String
+  techStack            String
+  businessRequirements String @map("business_requirements")
+  technicalConstraints String @map("technical_constraints")
+  knownDependencies    String @map("known_dependencies")
+  targetReleaseDate    String @map("target_release_date")
+  additionalNotes      String @map("additional_notes")
+
+  ownerId String @map("owner_id")
+  owner   User   @relation("ProjectOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+
+  createdAt      DateTime         @default(now()) @map("created_at")
+  updatedAt      DateTime         @updatedAt @map("updated_at")
+  projectMembers ProjectMembers[]
+
+  @@map("projects")
+}
+
+model ProjectMembers {
+  id        String      @id @default(uuid())
+  userId    String      @map("user_id")
+  projectId String      @map("project_id")
+  role      ProjectRole @default(DEVELOPER)
+  project   Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  invitedAt DateTime    @default(now()) @map("invited_at")
+  joinedAt  DateTime?   @map("joined_at")
+
+  @@unique([userId, projectId])
+  @@map("project_members")
 }
